@@ -17,7 +17,12 @@ ARG_ARRAY := make([dynamic]Arg);
 VAL_ARRAY := make([dynamic]rawptr);
 HAS_RUN   := false;
 
-// TODO: improve print strings
+/*
+ * TODO:
+ * - improve usage print strings
+ * - handle failed number parsing
+ * - add ability to handle bools in future with no arg + just toggle
+*/
 
 __usage_print :: proc() {
     // Iterate through ARG_ARRAY and print
@@ -79,7 +84,6 @@ parse_args :: proc(args: []string) {
 
             // Check if key matches
             else if a == ARG_ARRAY[k].key {
-                // TODO: add ability to handle bools in future with no arg + just toggle
                 __parse_string_value(args[i+1], ARG_ARRAY[k].ptr, ARG_ARRAY[k].type);
                 match_found = true;
                 i += 1;
@@ -97,8 +101,6 @@ parse_args :: proc(args: []string) {
 
 __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
     // We use strcnv's string parsing methods
-    // TODO: handle failed number parsing
-
     switch type {
         case string:
             newstr := new_clone(str);
@@ -109,6 +111,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
             result := new(bool);
             ok: bool;
 
+            // Fail out if invalid bool value passed
             result^, ok = strconv.parse_bool(str);
             if !ok {
                 __usage_print_exit(2);
@@ -160,7 +163,11 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
             n^ = u^;
 
         case rune:
-            // TODO: improve handling here instead of just taking 0th string index
+            // Fail out if >1 char (rune) passed
+            if len(str) > 1 {
+                __usage_print_exit(2);
+            }
+            
             r := new(rune);
             r^ = utf8.rune_at_pos(str, 0);
 
