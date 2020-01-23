@@ -7,35 +7,35 @@ import "core:unicode/utf8"
 import "core:strings"
 
 Arg :: struct {
-    key: string,
-    desc: string,
-    ptr: rawptr,
-    type: typeid,
+    key:    string,
+    desc:   string,
+    ptr:    rawptr,
+    type:   typeid,
 };
 
-ARG_DICT  := make([dynamic]Arg);
+ARG_ARRAY := make([dynamic]Arg);
 VAL_ARRAY := make([dynamic]rawptr);
 HAS_RUN   := false;
 
-// TODO: handle not-supported argument value types
-// TODO: handle not-provided argument keys
 // TODO: improve print strings
-// TODO: handle not allowing >=2 args of same string
-// TODO: have separate array of argument values so we can free
-//       memory of keys and descriptions
 
 __usage_print :: proc() {
-    // iterate through ARG_DICT and print
-    length := len(ARG_DICT);
+    // Iterate through ARG_ARRAY and print
+    length := len(ARG_ARRAY);
 
     fmt.eprintf("Usage:\n");
-    for i := 0; i < length; i += 1 {;
-        fmt.eprintf("--%s\t%s\n", ARG_DICT[i].key, ARG_DICT[i].desc);
+    for i := 0; i < length; i += 1 {
+        fmt.eprintf("--%s\t%s\n", ARG_ARRAY[i].key, ARG_ARRAY[i].desc);
     }
 }
 
-__usage_print_exit :: proc(code: int) {;
+__usage_print_exit :: proc(code: int) {
     __usage_print();
+    os.exit(code);
+}
+
+__print_exit :: proc(code: int, format: string, args: ..any) {
+    fmt.eprintf(format, ..args);
     os.exit(code);
 }
 
@@ -45,23 +45,21 @@ parse_all_args :: proc() {
 
 parse_args :: proc(args: []string) {
     length := len(args);
-    keys_length := len(ARG_DICT);
+    keys_length := len(ARG_ARRAY);
 
     // No arguments supplied or none set to track
     if length == 1 || keys_length == 0 {
         __usage_print_exit(0);
-        return;
     }
 
     // Odd number of arguments supplied (not enough values for keys!)
     else if length % 2 != 0 {
-        __usage_print_exit(0);
-        return;
-        // TODO: check consensus on return codes for failing out due to wrong args
+        __usage_print_exit(2);
     }
 
     a: string;
     i, j, k: int;
+    match_found: bool;    
     for i = 0; i < length; i += 1 {
         a = args[i];
 
@@ -72,18 +70,29 @@ parse_args :: proc(args: []string) {
             }
         }
 
+        match_found = false;
         for k = 0; k < keys_length; k += 1 {
+            // Always response to user's requests for help :']
+            if a == "help" {
+                __usage_print_exit(0);
+            }
+
             // Check if key matches
-            if a == ARG_DICT[k].key {
+            else if a == ARG_ARRAY[k].key {
                 // TODO: add ability to handle bools in future with no arg + just toggle
-                __parse_string_value(args[i+1], ARG_DICT[k].ptr, ARG_DICT[k].type);
+                __parse_string_value(args[i+1], ARG_ARRAY[k].ptr, ARG_ARRAY[k].type);
+                match_found = true;
                 i += 1;
                 break;
             }
         }
+
+        if !match_found {
+            __usage_print_exit(2);
+        }
     }
 
-    delete(ARG_DICT);
+    delete(ARG_ARRAY);
 }
 
 __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
@@ -102,7 +111,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
             result^, ok = strconv.parse_bool(str);
             if !ok {
-                __usage_print_exit(1);
+                __usage_print_exit(2);
             }
 
             n := cast(^bool) p;
@@ -173,12 +182,18 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
             n^ = f^;
 
         case:
-            fmt.println("Type error for: %t\n", type);
-            __usage_print_exit(1);
+            __print_exit(1, "ERROR: unsupported type %t\n", type);
     }
 }
 
-track_arg :: proc(arg: string, descript: string, default: $T) -> ^T {
+track_arg :: proc(key: string, desc: string, default: $T) -> ^T {
+    // Check this argument isn't already in array
+    for arg, _ in ARG_ARRAY {
+        if arg.key == key {
+            __print_exit(1, "ERROR: multiple arguments with same key %s\n", key);
+        }
+    }
+
     // First, create copy of default
     p := new_clone(default);
 
@@ -187,11 +202,11 @@ track_arg :: proc(arg: string, descript: string, default: $T) -> ^T {
 
     // Create arg struct with rest of data + append
     a := new(Arg);
-    a.key = arg;
-    a.desc = descript;
+    a.key = key;
+    a.desc = desc;
     a.ptr = cast(^rawptr) p;
     a.type = T;
-    append(&ARG_DICT, a^);
+    append(&ARG_ARRAY, a^);
 
     return cast(^T) p;
 }
