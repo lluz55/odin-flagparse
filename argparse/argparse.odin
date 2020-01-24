@@ -1,3 +1,10 @@
+/*
+ * TODO:
+ * - improve usage print strings
+ * - add ability to handle bools in future with no arg + just toggle
+ * - add maximum string length / ability to set max string length (?)
+*/
+
 package argparse
 
 import "core:os"
@@ -13,18 +20,20 @@ Arg :: struct {
     type:   typeid,
 };
 
-ARG_ARRAY := make([dynamic]Arg);
-VAL_ARRAY := make([dynamic]rawptr);
-HAS_RUN   := false;
+ARG_ARRAY := make([dynamic]Arg);    // argument structs, deleted at end of parse_args()
+VAL_ARRAY := make([dynamic]rawptr); // raw argument value pointers, not deleted
 
-/*
- * TODO:
- * - improve usage print strings
- * - handle failed number parsing
- * - add ability to handle bools in future with no arg + just toggle
-*/
+__print_usage_exit :: proc(code: int) {
+    print_usage();
+    os.exit(code);
+}
 
-__usage_print :: proc() {
+__print_exit :: proc(code: int, format: string, args: ..any) {
+    fmt.eprintf(format, ..args);
+    os.exit(code);
+}
+
+print_usage :: proc() {
     // Iterate through ARG_ARRAY and print
     length := len(ARG_ARRAY);
 
@@ -32,16 +41,6 @@ __usage_print :: proc() {
     for i := 0; i < length; i += 1 {
         fmt.eprintf("--%s\t%s\n", ARG_ARRAY[i].key, ARG_ARRAY[i].desc);
     }
-}
-
-__usage_print_exit :: proc(code: int) {
-    __usage_print();
-    os.exit(code);
-}
-
-__print_exit :: proc(code: int, format: string, args: ..any) {
-    fmt.eprintf(format, ..args);
-    os.exit(code);
 }
 
 parse_all_args :: proc() {
@@ -54,12 +53,12 @@ parse_args :: proc(args: []string) {
 
     // No arguments supplied or none set to track
     if length == 1 || keys_length == 0 {
-        __usage_print_exit(0);
+        __print_usage_exit(0);
     }
 
     // Odd number of arguments supplied (not enough values for keys!)
     else if length % 2 != 0 {
-        __usage_print_exit(2);
+        __print_usage_exit(2);
     }
 
     a: string;
@@ -79,7 +78,7 @@ parse_args :: proc(args: []string) {
         for k = 0; k < keys_length; k += 1 {
             // Always response to user's requests for help :']
             if a == "help" {
-                __usage_print_exit(0);
+                __print_usage_exit(0);
             }
 
             // Check if key matches
@@ -92,11 +91,44 @@ parse_args :: proc(args: []string) {
         }
 
         if !match_found {
-            __usage_print_exit(2);
+            __print_usage_exit(2);
         }
     }
 
     delete(ARG_ARRAY);
+}
+
+__is_zero_int :: proc(str: string) -> bool {
+    for s, i in str {
+        switch s {
+            case '0':
+                continue;
+
+            case:
+                return false;
+        }
+    }
+
+    return true;
+}
+
+__is_zero_float :: proc(str: string) -> bool {
+    dotcount := 0;
+    for s, i in str {
+        switch s {
+            case '0':
+                continue;
+
+            case '.':
+                dotcount += 1;
+                continue;
+
+            case:
+                return false;
+        }
+    }
+
+    return dotcount <= 1;
 }
 
 __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
@@ -104,100 +136,148 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
     switch type {
         case string:
             newstr := new_clone(str);
+            ok := true;
+
+            // Assume always fine for strings
+            if !ok { __print_usage_exit(2); };
+
             n := cast(^string) p;
             n^ = newstr^;
 
         case bool:
-            result := new(bool);
+            newbool := new(bool);
             ok: bool;
 
-            // Fail out if invalid bool value passed
-            result^, ok = strconv.parse_bool(str);
-            if !ok {
-                __usage_print_exit(2);
-            }
+            newbool^, ok = strconv.parse_bool(str);
+            if !ok { __print_usage_exit(2); };
 
             n := cast(^bool) p;
-            n^ = result^;
+            n^ = newbool^;
 
         case int:
-            i := new(int);
-            i^ = strconv.parse_int(str);
+            newint := new(int);
+
+            newint^ = strconv.parse_int(str);
+            if newint^ == 0 && !__is_zero_int(str) {
+                __print_usage_exit(2);
+            }
 
             n := cast(^int) p;
-            n^ = i^;
+            n^ = newint^;
 
         case uint:
-            u := new(uint);
-            u^ = strconv.parse_uint(str);
+            newuint := new(uint);
+
+            newuint^ = strconv.parse_uint(str);
+            if newuint^ == 0 && !__is_zero_int(str) {
+                __print_usage_exit(2);
+            }
 
             n := cast(^uint) p;
-            n^ = u^;
+            n^ = newuint^;
 
         case i32:
-            i := new(i32);
-            i^ = i32(strconv.parse_i64(str));
-            
+            newi32 := new(i32);
+
+            newi32^ = cast(i32) strconv.parse_i64(str);
+            if newi32^ == 0 && !__is_zero_int(str) {
+                __print_usage_exit(2);
+            }
+
             n := cast(^i32) p;
-            n^ = i^;
+            n^ = newi32^;
 
         case u32:
-            u := new(u32);
-            u^ = u32(strconv.parse_u64(str));
-            
+            newu32 := new(u32);
+
+            newu32^ = cast(u32) strconv.parse_u64(str);
+            if newu32^ == 0 && !__is_zero_int(str) {
+                __print_usage_exit(2);
+            }
+
             n := cast(^u32) p;
-            n^ = u^;
+            n^ = newu32^;
 
         case i64:
-            i := new(i64);
-            i^ = strconv.parse_i64(str);
+            newi64 := new(i64);
+
+            newi64^ = strconv.parse_i64(str);
+            if newi64^ == 0 && !__is_zero_int(str) {
+                __print_usage_exit(2);
+            }
 
             n := cast(^i64) p;
-            n^ = i^;
+            n^ = newi64^;
 
         case u64:
-            u := new(u64);
-            u^ = strconv.parse_u64(str);
+            newu64 := new(u64);
+
+            newu64^ = strconv.parse_u64(str);
+            if newu64^ == 0 && !__is_zero_int(str) {
+                __print_usage_exit(2);
+            }
 
             n := cast(^u64) p;
-            n^ = u^;
+            n^ = newu64^;
 
         case rune:
-            // Fail out if >1 char (rune) passed
-            if len(str) > 1 {
-                __usage_print_exit(2);
+            if len(str) != 1 {
+                __print_usage_exit(2);
             }
             
-            r := new(rune);
-            r^ = utf8.rune_at_pos(str, 0);
+            newrune := new(rune);
+            newrune^ = cast(rune) str[0];
 
             n := cast(^rune) p;
-            n^ = r^;
+            n^ = newrune^;
 
         case f32:
-            f := new(f32);
-            f^ = strconv.parse_f32(str);
+            newf32 := new(f32);
+
+            newf32^ = strconv.parse_f32(str);
+            if newf32^ == 0.0 && !__is_zero_float(str) {
+                __print_usage_exit(2);
+            }
 
             n := cast(^f32) p;
-            n^ = f^;
+            n^ = newf32^;
 
         case f64:
-            f := new(f64);
-            f^ = strconv.parse_f64(str);
+            newf64 := new(f64);
+
+            newf64^ = strconv.parse_f64(str);
+            if newf64^ == 0.0 && !__is_zero_float(str) {
+                __print_usage_exit(2);
+            }
 
             n := cast(^f64) p;
-            n^ = f^;
+            n^ = newf64^;
 
         case:
-            __print_exit(1, "ERROR: unsupported type %t\n", type);
+            __print_exit(1, "CRITICAL ERROR: escaped switch statement, unsupported type '%t'\n", type);
     }
 }
 
 track_arg :: proc(key: string, desc: string, default: $T) -> ^T {
+    // COMPILE_TIME_CHECKS
+    #assert(
+        T == string ||
+        T == bool   ||
+        T == int    ||
+        T == uint   ||
+        T == i32    ||
+        T == u32    ||
+        T == i64    ||
+        T == u64    ||
+        T == rune   ||
+        T == f32    ||
+        T == f64,
+    );
+
     // Check this argument isn't already in array
     for arg, _ in ARG_ARRAY {
         if arg.key == key {
-            __print_exit(1, "ERROR: multiple arguments with same key %s\n", key);
+            __print_exit(1, "ERROR: multiple arguments with same key '%s'\n", key);
         }
     }
 
@@ -209,10 +289,10 @@ track_arg :: proc(key: string, desc: string, default: $T) -> ^T {
 
     // Create arg struct with rest of data + append
     a := new(Arg);
-    a.key = key;
-    a.desc = desc;
-    a.ptr = cast(^rawptr) p;
-    a.type = T;
+    a.key   = key;
+    a.desc  = desc;
+    a.ptr   = cast(^rawptr) p;
+    a.type  = T;
     append(&ARG_ARRAY, a^);
 
     return cast(^T) p;
