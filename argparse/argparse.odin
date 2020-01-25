@@ -181,11 +181,6 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
     switch type {
         case string:
             newstr := new_clone(str);
-            ok := true;
-
-            // Assume always fine for strings
-            if !ok { __print_usage_exit(2); };
-
             n := cast(^string) p;
             n^ = newstr^;
 
@@ -194,7 +189,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
             newint^ = strconv.parse_int(str);
             if newint^ == 0 && !__is_zero_int(str) {
-                __print_usage_exit(2);
+                __print_exit(2, "Unable to parse int: %s\n", str);
             }
 
             n := cast(^int) p;
@@ -205,7 +200,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
             newuint^ = strconv.parse_uint(str);
             if newuint^ == 0 && !__is_zero_int(str) {
-                __print_usage_exit(2);
+                __print_exit(2, "Unable to parse uint: %s\n", str);
             }
 
             n := cast(^uint) p;
@@ -216,7 +211,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
             newi32^ = cast(i32) strconv.parse_i64(str);
             if newi32^ == 0 && !__is_zero_int(str) {
-                __print_usage_exit(2);
+                __print_exit(2, "Unable to parse i32: %s\n", str);
             }
 
             n := cast(^i32) p;
@@ -227,7 +222,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
             newu32^ = cast(u32) strconv.parse_u64(str);
             if newu32^ == 0 && !__is_zero_int(str) {
-                __print_usage_exit(2);
+                __print_exit(2, "Unable to parse u32: %s\n", str);
             }
 
             n := cast(^u32) p;
@@ -238,7 +233,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
             newi64^ = strconv.parse_i64(str);
             if newi64^ == 0 && !__is_zero_int(str) {
-                __print_usage_exit(2);
+                __print_exit(2, "Unable to parse i64: %s\n", str);
             }
 
             n := cast(^i64) p;
@@ -249,7 +244,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
             newu64^ = strconv.parse_u64(str);
             if newu64^ == 0 && !__is_zero_int(str) {
-                __print_usage_exit(2);
+                __print_exit(2, "Unable to parse u64: %s\n", str);
             }
 
             n := cast(^u64) p;
@@ -257,7 +252,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
         case rune:
             if len(str) != 1 {
-                __print_usage_exit(2);
+                __print_exit(2, "Unable to parse rune: %s\n", str);
             }
             
             newrune := new(rune);
@@ -271,7 +266,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
             newf32^ = strconv.parse_f32(str);
             if newf32^ == 0.0 && !__is_zero_float(str) {
-                __print_usage_exit(2);
+                __print_exit(2, "Unable to parse f32: %s\n", str);
             }
 
             n := cast(^f32) p;
@@ -282,7 +277,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
             newf64^ = strconv.parse_f64(str);
             if newf64^ == 0.0 && !__is_zero_float(str) {
-                __print_usage_exit(2);
+                __print_exit(2, "Unable to parse %f64: %s\n", str);
             }
 
             n := cast(^f64) p;
