@@ -293,7 +293,7 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
     }
 }
 
-track_arg :: proc($key_chr, $key_str, $desc: string, default: $T) -> ^T {
+track_arg :: proc($key_chr, $key_str, $desc: string, $default: $T) -> ^T {
     // COMPILE CHECK: only compatible type passed
     #assert(
         T == string ||
