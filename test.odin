@@ -4,10 +4,10 @@ import "core:os"
 import "core:fmt"
 import "argparse"
 
-arg_string  := argparse.track_arg("string", "string value", "string");
-arg_bool    := argparse.track_arg("bool", "bool value", false);
-arg_int     := argparse.track_arg("int", "int value", cast(int) 0);
-arg_uint    := argparse.track_arg("uint", "uint value", cast(uint) 0);
+arg_string  := argparse.track_arg("s", "string", "string value", "string");
+arg_bool    := argparse.track_arg("b", "bool", "bool value", false);
+arg_int     := argparse.track_arg("i", "int", "int value", cast(int) 0);
+arg_uint    := argparse.track_arg("u", "uint", "uint value", cast(uint) 0);
 
 main :: proc() {
     argparse.parse_all_args();
