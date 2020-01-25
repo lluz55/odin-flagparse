@@ -3,6 +3,7 @@
  * - add maximum string length / ability to set max string length (?)
  * - improve arg key check speed
  * - unspaghettify multi-character stack arguments...
+ * - check for '.' in non-floats
  */
 
 package argparse
