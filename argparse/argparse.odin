@@ -22,7 +22,6 @@ Arg :: struct {
 };
 
 ARG_ARRAY := make([dynamic]Arg);    // argument structs, deleted at end of parse_args()
-VAL_ARRAY := make([dynamic]rawptr); // raw argument value pointers, not deleted
 STR_MAX   := 255;
 
 __print_usage_exit :: proc(code: int) {
@@ -71,9 +70,7 @@ parse_valid_args :: proc(args: []string) -> []string {
     ret_array := make([dynamic]string);
 
     // No arguments supplied or none set to track
-    if length == 0 || keys_length == 0 {
-        __print_usage_exit(0);
-    }
+    if length == 0 || keys_length == 0 do return ret_array[:];
 
     // Predefine variables so not constantly allocating new
     a: string;
@@ -86,12 +83,16 @@ parse_valid_args :: proc(args: []string) -> []string {
         a_len = len(a);
 
         // Invalid argument key, exit
-        if a_len < 2 || a[0] != '-' do __print_exit(2, "Invalid argument key: %s\n", a);
+        if a_len < 2 || a[0] != '-' {
+            append(&ret_array, a);
+            continue;
+        }
 
         // a_len == 2 --> assume passed char argument key
         if a_len == 2 {
             if a[1] == '-' {
-                __print_exit(2, "Empty argument key: %s\n", a);
+                append(&ret_array, a);
+                continue;
             }
 
             // Strip leading "-"            
@@ -104,7 +105,8 @@ parse_valid_args :: proc(args: []string) -> []string {
         // a_len > 2 --> assume passed string argument key
         else {
             if a[1] != '-' {
-                __print_exit(2, "Invalid argument key: %s\n", a);
+                append(&ret_array, a);
+                continue;
             }
 
             // Strip leading "--"
@@ -133,7 +135,6 @@ parse_valid_args :: proc(args: []string) -> []string {
         if !match_found do append(&ret_array, a);
     }
 
-    delete(ARG_ARRAY);
     return ret_array[:];
 }
 
@@ -318,11 +319,8 @@ track_arg :: proc($key_chr, $key_str, $desc: string, default: $T) -> ^T {
         }
     }
 
-    // First, create copy of default
+    // Create copy of default
     p := new_clone(default);
-
-    // Append this clone ptr to value array
-    append(&VAL_ARRAY, cast(^rawptr) p);
 
     // Create arg struct with rest of data + append
     a := new(Arg);
