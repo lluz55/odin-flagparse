@@ -3,6 +3,7 @@
  * - improve usage print strings
  * - add ability to handle bools in future with no arg + just toggle
  * - add maximum string length / ability to set max string length (?)
+ * - improve arg key check speed
 */
 
 package argparse
@@ -14,14 +15,16 @@ import "core:unicode/utf8"
 import "core:strings"
 
 Arg :: struct {
-    key:    string,
-    desc:   string,
-    ptr:    rawptr,
-    type:   typeid,
+    key_chr:   string,
+    key_str:    string,
+    desc:       string,
+    ptr:        rawptr,
+    type:       typeid,
 };
 
 ARG_ARRAY := make([dynamic]Arg);    // argument structs, deleted at end of parse_args()
 VAL_ARRAY := make([dynamic]rawptr); // raw argument value pointers, not deleted
+STR_MAX   := 255;
 
 __print_usage_exit :: proc(code: int) {
     print_usage();
@@ -33,13 +36,18 @@ __print_exit :: proc(code: int, format: string, args: ..any) {
     os.exit(code);
 }
 
+__print_arg_key :: proc(key_chr, key_str, desc: string) {
+    fmt.eprintf("-%s|--%s\t%s\n", key_chr, key_str, desc);
+}
+
 print_usage :: proc() {
     // Iterate through ARG_ARRAY and print
     length := len(ARG_ARRAY);
 
     fmt.eprintf("Usage:\n");
+    __print_arg_key("h", "help", "print usage");
     for i := 0; i < length; i += 1 {
-        fmt.eprintf("--%s\t%s\n", ARG_ARRAY[i].key, ARG_ARRAY[i].desc);
+        __print_arg_key(ARG_ARRAY[i].key_chr, ARG_ARRAY[i].key_str, ARG_ARRAY[i].desc);
     }
 }
 
@@ -61,37 +69,67 @@ parse_args :: proc(args: []string) {
         __print_usage_exit(2);
     }
 
+    // Predefine variables so not constantly allocating new
     a: string;
-    i, j, k: int;
-    match_found: bool;    
+    a_len, i, j, k: int;
+    match_found: bool;
+
+    // Loop through arguments!
     for i = 0; i < length; i += 1 {
         a = args[i];
+        a_len = len(a);
 
-        // Strip any leading hyphens (up to 2!)
-        for j = 0; j < 2; j += 1 {
-            if a[0] == '-' {
-                a = a[1:];
+        // Invalid argument key, exit
+        if a_len < 2 || a[0] != '-' do __print_exit(2, "Invalid argument key: %s\n", a);
+
+        // a_len == 2 --> assume passed char argument key
+        if a_len == 2 {
+            if a[1] == '-' {
+                __print_exit(2, "Empty argument key: %s\n", a);
+            }
+
+            // Strip leading "-"            
+            a = a[1:];
+
+            // Check for "h" help request
+            if a == "h" do __print_usage_exit(0);            
+
+            match_found = true;
+            for k = 0; k < keys_length; k += 1 {
+                if a == ARG_ARRAY[k].key_chr {
+                    __parse_string_value(args[i+1], ARG_ARRAY[k].ptr, ARG_ARRAY[k].type);
+                    match_found = true;
+                    i += 1;
+                    break;
+                }
             }
         }
 
-        match_found = false;
-        for k = 0; k < keys_length; k += 1 {
-            // Always response to user's requests for help :']
-            if a == "help" {
-                __print_usage_exit(0);
+        // a_len > 2 --> assume passed string argument key
+        else {
+            if a[1] != '-' {
+                __print_exit(2, "Invalid argument key: %s\n", a);
             }
 
-            // Check if key matches
-            else if a == ARG_ARRAY[k].key {
-                __parse_string_value(args[i+1], ARG_ARRAY[k].ptr, ARG_ARRAY[k].type);
-                match_found = true;
-                i += 1;
-                break;
+            // Strip leading "--"
+            a = a[2:];
+
+            // Check for "help" help request
+            if a == "help" do __print_usage_exit(0);
+
+            match_found = true;
+            for k = 0; k < keys_length; k += 1 {
+                if a == ARG_ARRAY[k].key_str {
+                    __parse_string_value(args[i+1], ARG_ARRAY[k].ptr, ARG_ARRAY[k].type);
+                    match_found = true;
+                    i += 1;
+                    break;
+                }
             }
         }
 
         if !match_found {
-            __print_usage_exit(2);
+            __print_exit(2, "Invalid argument key: %s\n", a);
         }
     }
 
@@ -258,8 +296,8 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
     }
 }
 
-track_arg :: proc(key: string, desc: string, default: $T) -> ^T {
-    // COMPILE_TIME_CHECKS
+track_arg :: proc($key_chr, $key_str, $desc: string, default: $T) -> ^T {
+    // COMPILE CHECK: only compatible type passed
     #assert(
         T == string ||
         T == bool   ||
@@ -274,10 +312,13 @@ track_arg :: proc(key: string, desc: string, default: $T) -> ^T {
         T == f64,
     );
 
+    // COMPILE CHECK: at least one valid char / string key
+    #assert( (len(key_chr) == 1 && key_chr[0] != '-') || (len(key_str) > 0 && key_str[0] != '-') );
+
     // Check this argument isn't already in array
     for arg, _ in ARG_ARRAY {
-        if arg.key == key {
-            __print_exit(1, "ERROR: multiple arguments with same key '%s'\n", key);
+        if arg.key_chr == key_chr || arg.key_str == key_str {
+            __print_exit(1, "ERROR: multiple arguments with same key\n");
         }
     }
 
@@ -289,10 +330,11 @@ track_arg :: proc(key: string, desc: string, default: $T) -> ^T {
 
     // Create arg struct with rest of data + append
     a := new(Arg);
-    a.key   = key;
-    a.desc  = desc;
-    a.ptr   = cast(^rawptr) p;
-    a.type  = T;
+    a.key_chr = key_chr;
+    a.key_str = key_str;
+    a.desc    = desc;
+    a.ptr     = cast(^rawptr) p;
+    a.type    = T;
     append(&ARG_ARRAY, a^);
 
     return cast(^T) p;
