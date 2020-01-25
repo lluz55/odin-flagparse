@@ -1,7 +1,6 @@
 /*
  * TODO:
  * - improve usage print strings
- * - add ability to handle bools in future with no arg + just toggle
  * - add maximum string length / ability to set max string length (?)
  * - improve arg key check speed
 */
@@ -60,13 +59,8 @@ parse_args :: proc(args: []string) {
     keys_length := len(ARG_ARRAY);
 
     // No arguments supplied or none set to track
-    if length == 1 || keys_length == 0 {
+    if length == 0 || keys_length == 0 {
         __print_usage_exit(0);
-    }
-
-    // Odd number of arguments supplied (not enough values for keys!)
-    else if length % 2 != 0 {
-        __print_usage_exit(2);
     }
 
     // Predefine variables so not constantly allocating new
@@ -92,17 +86,7 @@ parse_args :: proc(args: []string) {
             a = a[1:];
 
             // Check for "h" help request
-            if a == "h" do __print_usage_exit(0);            
-
-            match_found = true;
-            for k = 0; k < keys_length; k += 1 {
-                if a == ARG_ARRAY[k].key_chr {
-                    __parse_string_value(args[i+1], ARG_ARRAY[k].ptr, ARG_ARRAY[k].type);
-                    match_found = true;
-                    i += 1;
-                    break;
-                }
-            }
+            if a == "h" do __print_usage_exit(0);
         }
 
         // a_len > 2 --> assume passed string argument key
@@ -116,15 +100,20 @@ parse_args :: proc(args: []string) {
 
             // Check for "help" help request
             if a == "help" do __print_usage_exit(0);
+        }
 
-            match_found = true;
-            for k = 0; k < keys_length; k += 1 {
-                if a == ARG_ARRAY[k].key_str {
+        match_found = true;
+        for k = 0; k < keys_length; k += 1 {
+            if a == ARG_ARRAY[k].key_chr || a == ARG_ARRAY[k].key_str {
+                if ARG_ARRAY[k].type == bool {
+                    __toggle_bool_value(ARG_ARRAY[k].ptr);
+                } else {
                     __parse_string_value(args[i+1], ARG_ARRAY[k].ptr, ARG_ARRAY[k].type);
-                    match_found = true;
                     i += 1;
-                    break;
                 }
+
+                match_found = true;
+                break;
             }
         }
 
@@ -134,6 +123,11 @@ parse_args :: proc(args: []string) {
     }
 
     delete(ARG_ARRAY);
+}
+
+__toggle_bool_value :: proc(p: rawptr) {
+    n := cast(^bool) p;
+    n^ = ! n^;
 }
 
 __is_zero_int :: proc(str: string) -> bool {
@@ -181,16 +175,6 @@ __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
 
             n := cast(^string) p;
             n^ = newstr^;
-
-        case bool:
-            newbool := new(bool);
-            ok: bool;
-
-            newbool^, ok = strconv.parse_bool(str);
-            if !ok { __print_usage_exit(2); };
-
-            n := cast(^bool) p;
-            n^ = newbool^;
 
         case int:
             newint := new(int);
