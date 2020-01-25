@@ -14,7 +14,7 @@ import "core:unicode/utf8"
 import "core:strings"
 
 Arg :: struct {
-    key_chr:   string,
+    key_chr:    string,
     key_str:    string,
     desc:       string,
     ptr:        rawptr,
@@ -55,8 +55,20 @@ parse_all_args :: proc() {
 }
 
 parse_args :: proc(args: []string) {
+    remain := parse_valid_args(args);
+    if len(remain) > 0 {
+        __print_exit(2, "Invalid arguments: %s\n", remain);
+    }
+}
+
+parse_all_valid_args :: proc() -> []string {
+    return parse_valid_args(os.args[1:]);
+}
+
+parse_valid_args :: proc(args: []string) -> []string {
     length := len(args);
     keys_length := len(ARG_ARRAY);
+    ret_array := make([dynamic]string);
 
     // No arguments supplied or none set to track
     if length == 0 || keys_length == 0 {
@@ -117,12 +129,12 @@ parse_args :: proc(args: []string) {
             }
         }
 
-        if !match_found {
-            __print_exit(2, "Invalid argument key: %s\n", a);
-        }
+        // Append non-match to return array
+        if !match_found do append(&ret_array, a);
     }
 
     delete(ARG_ARRAY);
+    return ret_array[:];
 }
 
 __toggle_bool_value :: proc(p: rawptr) {
