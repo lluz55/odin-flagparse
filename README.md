@@ -1,6 +1,6 @@
 # Odin argument parsing library
 
-## Usage
+## Coding Usage
 
 `track_arg :: proc(key_char, key_string, description: string, default: $T) -> ^T`
 
@@ -20,6 +20,9 @@ Supported types:
 - rune
 - f32
 - f64
+
+Duplicate character or string arguments are strictly not allowed. Character 'h' and string "help" are
+reserved for argparse's built-in usage printing.
 
 Parsing these values is acheived with any of the following:
 - `parse_valid_args :: proc(args: []string) -> []string` which parses a supplied string array and returns
