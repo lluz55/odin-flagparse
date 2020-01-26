@@ -2,18 +2,18 @@ package main
 
 import "core:os"
 import "core:fmt"
-import "argparse"
+import "flagparse"
 
-arg_string  := argparse.track_arg('s', "string", "string value", "string");
-arg_bool    := argparse.track_arg('b', "bool", "bool value", false);
-arg_int     := argparse.track_arg('i', "int", "int value", cast(int) 0);
-arg_uint    := argparse.track_arg('u', "uint", "uint value", cast(uint) 0);
+flag_string  := flagparse.track_flag('s', "string", "string value", "string");
+flag_bool    := flagparse.track_flag('b', "bool", "bool value", false);
+flag_int     := flagparse.track_flag('i', "int", "int value", cast(int) 0);
+flag_uint    := flagparse.track_flag('u', "uint", "uint value", cast(uint) 0);
 
 main :: proc() {
-    argparse.parse_all_args();
+    flagparse.parse_all_flags();
 
-    fmt.printf("string: %s\n", arg_string^);
-    fmt.printf("bool: %v\n", arg_bool^);
-    fmt.printf("int: %d\n", arg_int^);
-    fmt.printf("uint: %d\n", arg_uint^);
+    fmt.printf("string: %s\n", flag_string^);
+    fmt.printf("bool: %v\n", flag_bool^);
+    fmt.printf("int: %d\n", flag_int^);
+    fmt.printf("uint: %d\n", flag_uint^);
 }
