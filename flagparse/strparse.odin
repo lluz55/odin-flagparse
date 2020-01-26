@@ -1,15 +1,4 @@
-/*
- * TODO:
- * - improve arg key check speed (remove elements from array / map?)
- * - improve error-ing out with multi-stack character arguments (prioritize wrong / multiple
- *   calls to same argument over non-bool argument not at end
- * - unspaghettify multi-character stack arguments...
- * - neaten up all of it
- * - fix usage print tab spacing
- * - fix issues with empty key_chr or key_str
- */
-
-package argparse
+package flagparse
 
 import "core:strconv"
 
