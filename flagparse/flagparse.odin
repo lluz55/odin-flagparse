@@ -21,6 +21,7 @@ Flag :: struct {
 @(private) FLAGSTR_MAP:  map[string]^Flag;
 @(private) FLAG_ARRAY := make([dynamic]Flag);
 @(private) FLAGSTR_MAX := 0;
+USAGE_STRING := "";
 
 parse_all_flags :: proc() {
     parse_flags(os.args[1:]);

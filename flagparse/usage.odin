@@ -30,7 +30,8 @@ __print_flag :: proc(key_chr: u8, key_str, desc: string, tab_count: int) {
 }
 
 print_usage :: proc() {
-    fmt.eprintf("Usage:\n");
+    if USAGE_STRING == "" do fmt.eprintf("Usage:\n");
+    else do fmt.eprintf(USAGE_STRING);
 
     tabcount := (FLAGSTR_MAX - 4) / 8;
     __print_flag('h', "help", "print usage", tabcount);

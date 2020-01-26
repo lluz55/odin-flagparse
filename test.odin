@@ -10,6 +10,7 @@ flag_int     := flagparse.track_flag('i', "int", "int value", cast(int) 0);
 flag_uint    := flagparse.track_flag('u', "uint", "uint value", cast(uint) 0);
 
 main :: proc() {
+    flagparse.USAGE_STRING = "flagparse test binary usage:\n";
     flagparse.parse_all_flags();
 
     fmt.printf("string: %s\n", flag_string^);
