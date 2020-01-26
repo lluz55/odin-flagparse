@@ -2,7 +2,7 @@
 
 ## Coding Usage
 
-`track_arg :: proc(key_char, key_string, description: string, default: $T) -> ^T`
+`track_arg :: proc(key_char: u8, key_string, description: string, default: $T) -> ^T`
 
 A pointer to the value is returned from `track_arg(...)`, and will contain either the default
 value or the parsed passed (heh) value. The underlying data type is set by the type of the default
