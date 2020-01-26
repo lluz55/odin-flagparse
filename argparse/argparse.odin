@@ -201,8 +201,8 @@ track_arg :: proc($key_chr: u8, $key_str, $desc: string, $default: $T) -> ^T {
         T == f64,
     );
 
-    // COMPILE CHECK: at least one valid char / string key
-    #assert(len(key_str) > 1);
+    // COMPILE CHECK: at least valid char and string keys
+    #assert(u8(32) <= key_chr && key_chr <= u8(136) && len(key_str) > 1);
     #assert(key_chr != '-' && key_str[0] != '-');
 
     // COMPILE CHECK: no overlap with built-in help argument
