@@ -12,7 +12,6 @@ arg_uint    := argparse.track_arg('u', "uint", "uint value", cast(uint) 0);
 main :: proc() {
     argparse.parse_all_args();
 
-    fmt.printf("Arg parse test!\n");
     fmt.printf("string: %s\n", arg_string^);
     fmt.printf("bool: %v\n", arg_bool^);
     fmt.printf("int: %d\n", arg_int^);
