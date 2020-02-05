@@ -14,6 +14,7 @@ __is_valid_uint :: proc(str: string) -> bool {
         switch s {
             case '0'..'9':
                 // all good!
+
             case:
                 return false;
         }
@@ -30,6 +31,7 @@ __is_valid_float :: proc(str: string) -> bool {
         switch s {
             case '0'..'9':
                 // all good!
+
             case '.':
                 if dotcount == 0 {
                     // all good!
@@ -37,6 +39,7 @@ __is_valid_float :: proc(str: string) -> bool {
                 } else {
                     return false;
                 }
+
             case:
                 return false;
         }
