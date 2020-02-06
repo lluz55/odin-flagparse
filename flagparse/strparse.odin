@@ -2,13 +2,11 @@ package flagparse
 
 import "core:strconv"
 
-@(private)
 __is_valid_int :: proc(str: string) -> bool {
     if str[0] == '-' do return __is_valid_uint(str[1:]);
     else do return __is_valid_uint(str);
 }
 
-@(private)
 __is_valid_uint :: proc(str: string) -> bool {
     for s, _ in str {
         switch s {
@@ -23,7 +21,6 @@ __is_valid_uint :: proc(str: string) -> bool {
     return true;
 }
 
-@(private)
 __is_valid_float :: proc(str: string) -> bool {
     dotcount := 0;
 
@@ -48,7 +45,6 @@ __is_valid_float :: proc(str: string) -> bool {
     return true;
 }
 
-@(private)
 __parse_string_value :: proc(str: string, p: rawptr, type: typeid) {
     // We use strcnv's string parsing methods
     switch type {
