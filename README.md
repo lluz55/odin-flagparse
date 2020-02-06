@@ -6,7 +6,9 @@ A simple flag parsing library written in Odin.
 
 ## Tracking Flags
 
-```track_flag :: proc(flag_char: u8, flag_string, description: string, default: $T) -> ^T```
+```
+track_flag :: proc(flag_char: u8, flag_string, description: string, default: $T) -> ^T
+```
 
 A pointer to the value is returned from `track_flag(...)`, and will contain either the default value or the parsed passed value. The underlying data type is set by the type of the default value, so specific casting of the default value can be used to ensure specific parsing.
 
@@ -30,32 +32,32 @@ reserved for argparse's built-in usage printing.
 
 Parsing these values is acheived with any of the following:
 
-- ```
-  parse_valid_flags :: proc(args: []string) -> []string
-  ```
+```
+parse_valid_flags :: proc(args: []string) -> []string
+```
 
-  which parses a supplied string array and returns invalid arguments.
-
-
-- ```
-  parse_all_valid_flags :: proc() -> []string
-  ```
-
-  which performs `parse_valid_flags(os.args[1:])` and returns invalid arguments.
+which parses a supplied string array and returns invalid arguments.
 
 
-- ```
-  parse_flags :: proc(args: []string)
-  ```
+```
+parse_all_valid_flags :: proc() -> []string
+```
 
-  which performs `parse_valid_flags(args)` but prints usage string and exits if any invalid arguments returned.
+which performs `parse_valid_flags(os.args[1:])` and returns invalid arguments.
 
 
-- ```
-  parse_all_flags :: proc()
-  ```
+```
+parse_flags :: proc(args: []string)
+```
 
-  which performs `parse_flags(os.args[1:])`.
+which performs `parse_valid_flags(args)` but prints usage string and exits if any invalid arguments returned.
+
+
+```
+parse_all_flags :: proc()
+```
+
+which performs `parse_flags(os.args[1:])`.
 
 ## Usage Printing Behaviour
 
