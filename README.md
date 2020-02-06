@@ -34,4 +34,17 @@ exits if any invalid arguments are returned
 - `parse_all_flags :: proc()` which performs `parse_flags(os.args[1:])` and prints usage then exits for
 invalid arguments
 
+Set the usage string printed before the table of flags and their descriptions with:
+`import "flagparse"
+
+flagparse.USAGE_STRING = "This is the new usage string!\n";
+`
+
+Set the behaviour of calling the compiled result with zero args:
+`import "flagparse"
+...
+flagparse.ZERO_ARG_PRINT = true;  // to print usage when no args supplied
+flagparse.ZERO_ARG_PRINT = false; // to not do this
+`
+
 Example in `test.odin`
