@@ -1,23 +1,35 @@
 #!/bin/sh
 
 print_exit() {
-    printf '%s\n' "$1"
-    exit $2
+    printf '!!! %s\n' "$1"
+    exit "$2"
 }
 
-odin build test.odin || print_exit 'Failed to compile!\n' 1
+test_print() {
+    local expected="$1"
+    shift 1
+
+    echo ""
+    echo "Testing: $@"
+
+    "$@"
+    [ $? -ne $expected ] && print_exit 'Failed test!' 1
+}
+
+odin build test.odin -out=test || print_exit 'Failed to compile!' 1
 printf 'Compiled test.odin!\n'
 
-printf '\nTesting values: string="a string" bool=true int=999 uint=999\n'
-./test --string 'a string' --bool --int 999 --uint 999
+test_print 0 ./test --string 'a string' --bool --int 999 --uint 999
+test_print 2 ./test --int nope --uint 111
+test_print 2 ./test --int 111 --uint nope
+test_print 2 ./test --string
+test_print 2 ./test -sb
+test_print 2 ./test -bs
+test_print 0 ./test -bs 'a string'
+test_print 2 ./test -bcs
+test_print 2 ./test --notanarg
+test_print 2 ./test
 
-printf '\nTesting values: int=nope uint=111\n'
-./test --int nope --uint 111
+unset print_exit test_print
 
-printf '\nTesting values: int=111 uint=nope\n'
-./test --int 111 --uint nope
-
-printf '\nTesting zero arg usage print:\n'
-./test
-
-unset print_exit
+printf '\nAll tests passed! :)\n'
