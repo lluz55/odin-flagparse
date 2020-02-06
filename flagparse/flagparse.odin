@@ -1,7 +1,5 @@
 /*
  * TODO:
- * - improve error-ing out with multi-stack character arguments (prioritize wrong / multiple
- *   calls to same argument over non-bool argument not at end
  * - neaten up all of it
  */
 
@@ -17,12 +15,13 @@ Flag :: struct {
     type:       typeid,
 };
 
-@(private) FLAGCHAR_MAP: map[u8]^Flag;
-@(private) FLAGSTR_MAP: map[string]^Flag;
-@(private) FLAG_ARRAY := make([dynamic]Flag);
-@(private) FLAGSTR_MAX := 0;
-USAGE_STRING := "";
-ZERO_ARG_PRINT := false;
+@(private) FLAGCHAR_MAP     : map[u8]^Flag;
+@(private) FLAGSTR_MAP      : map[string]^Flag;
+@(private) FLAG_ARRAY       := make([dynamic]Flag);
+@(private) FLAGSTR_MAX      := 0;
+
+USAGE_STRING    := "";
+ZERO_ARG_PRINT  := false;
 
 parse_all_flags :: proc() {
     parse_flags(os.args[1:]);
@@ -43,11 +42,11 @@ parse_valid_flags :: proc(args: []string) -> []string {
     length := len(args);
     ret_array := make([dynamic]string);
 
-    // End defers
+    // No longer needed after parsing!
     defer {
         delete(FLAGCHAR_MAP);
         delete(FLAGSTR_MAP);
-    }
+    };
 
     // No arguments supplied or none set to track
     if length == 0 {
@@ -98,6 +97,7 @@ parse_valid_flags :: proc(args: []string) -> []string {
 
                 if flag_ptr.type == bool do __toggle_bool_value(flag_ptr.ptr);
                 else {
+                    if i == length - 1 do __print_exit(2, "No value supplied for key: %c\n", flag_ptr.flag_char);
                     __parse_string_value(args[i+1], flag_ptr.ptr, flag_ptr.type);
                     i += 1;
                 }
@@ -134,7 +134,7 @@ parse_valid_flags :: proc(args: []string) -> []string {
                                 // Final char in multi-stack is allowed to accept non-bool type argument
                                 if i == length - 1 {
                                     // Reached end of argument array, no value supplied
-                                    __print_exit(2, "No value supplied for key: -%c | --%s", flag_ptr.flag_char, flag_ptr.flag_str);
+                                    __print_exit(2, "No value supplied for key: %c\n", flag_ptr.flag_char);
                                 }
 
                                 __parse_string_value(args[i+1], flag_ptr.ptr, flag_ptr.type);
@@ -167,6 +167,7 @@ parse_valid_flags :: proc(args: []string) -> []string {
 
                     if flag_ptr.type == bool do __toggle_bool_value(flag_ptr.ptr);
                     else {
+                        if i == length - 1 do __print_exit(2, "No value supplied for key: %s\n", flag_ptr.flag_str);
                         __parse_string_value(args[i+1], flag_ptr.ptr, flag_ptr.type);
                         i += 1;
                     }
