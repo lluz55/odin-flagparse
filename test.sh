@@ -17,4 +17,7 @@ printf '\nTesting values: int=nope uint=111\n'
 printf '\nTesting values: int=111 uint=nope\n'
 ./test --int 111 --uint nope
 
+printf '\nTesting zero arg usage print:\n'
+./test
+
 unset print_exit

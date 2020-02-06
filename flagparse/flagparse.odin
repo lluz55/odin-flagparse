@@ -18,10 +18,11 @@ Flag :: struct {
 };
 
 @(private) FLAGCHAR_MAP: map[u8]^Flag;
-@(private) FLAGSTR_MAP:  map[string]^Flag;
+@(private) FLAGSTR_MAP: map[string]^Flag;
 @(private) FLAG_ARRAY := make([dynamic]Flag);
 @(private) FLAGSTR_MAX := 0;
 USAGE_STRING := "";
+ZERO_ARG_PRINT := false;
 
 parse_all_flags :: proc() {
     parse_flags(os.args[1:]);
@@ -49,7 +50,12 @@ parse_valid_flags :: proc(args: []string) -> []string {
     }
 
     // No arguments supplied or none set to track
-    if length == 0 || len(FLAG_ARRAY) == 0 do return ret_array[:];
+    if length == 0 {
+        if ZERO_ARG_PRINT do __print_usage_exit(2);
+        else do return ret_array[:];
+    } else if len(FLAG_ARRAY) == 0 {
+        return ret_array[:];
+    }
 
     // Predefine variables so not constantly allocating new
     flag_ptr: ^Flag;
