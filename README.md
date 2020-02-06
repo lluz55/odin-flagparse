@@ -42,12 +42,12 @@ Parsing these values is acheived with any of the following:
 
 - `parse_flags :: proc(args: []string)`
 
-  which performs `parse_valid_flags(args)` but prints usage string and exits if any invalid arguments are returned
+  which performs `parse_valid_flags(args)` but prints usage string and exits if any invalid arguments returned.
 
 
 - `parse_all_flags :: proc()`
 
-  which performs `parse_flags(os.args[1:])` and prints usage then exits for invalid arguments
+  which performs `parse_flags(os.args[1:])`.
 
 ## Usage Printing Behaviour
 
@@ -60,4 +60,4 @@ flagparse.ZERO_ARG_PRINT = true;  // to print usage when no args supplied
 flagparse.ZERO_ARG_PRINT = false; // to not do this
 ```
 
-Example in `test.odin`
+Example in `test.odin`.
