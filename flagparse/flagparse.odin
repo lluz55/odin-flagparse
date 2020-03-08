@@ -10,20 +10,20 @@ package flagparse
 import "core:os"
 
 Flag :: struct {
-    flag_char   : u8,
-    flag_str    : string,
-    desc        : string,
-    ptr         : rawptr,
-    type        : typeid,
+    flag_char : u8,
+    flag_str  : string,
+    desc      : string,
+    ptr       : rawptr,
+    type      : typeid,
 };
 
-__FLAGCHAR_MAP     : map[u8]^Flag;
-__FLAGSTR_MAP      : map[string]^Flag;
-__FLAG_ARRAY       := make([dynamic]Flag);
-__FLAGSTR_MAX      := 0;
+@(private) FLAGCHAR_MAP : map[u8]^Flag;
+@(private) FLAGSTR_MAP  : map[string]^Flag;
+@(private) FLAG_ARRAY   := make([dynamic]Flag);
+@(private) FLAGSTR_MAX  := 0;
 
-USAGE_STRING    := "";
-ZERO_ARG_PRINT  := false;
+USAGE_STRING   := "";
+ZERO_ARG_PRINT := false;
 
 parse_all_flags :: proc() {
     parse_flags(os.args[1:]);
@@ -32,7 +32,7 @@ parse_all_flags :: proc() {
 parse_flags :: proc(args: []string) {
     remain := parse_valid_flags(args);
     if len(remain) > 0 {
-        __print_exit(2, "Invalid arguments: %s\n", remain);
+        print_exit(2, "Invalid arguments: %s\n", remain);
     }
 }
 
@@ -46,15 +46,15 @@ parse_valid_flags :: proc(args: []string) -> []string {
 
     // No longer needed after parsing!
     defer {
-        delete(__FLAGCHAR_MAP);
-        delete(__FLAGSTR_MAP);
+        delete(FLAGCHAR_MAP);
+        delete(FLAGSTR_MAP);
     };
 
     // No arguments supplied or none set to track
     if length == 0 {
-        if ZERO_ARG_PRINT do __print_usage_exit(2);
+        if ZERO_ARG_PRINT do print_usage_exit(2);
         else do return ret_array[:];
-    } else if len(__FLAG_ARRAY) == 0 {
+    } else if len(FLAG_ARRAY) == 0 {
         return ret_array[:];
     }
 
@@ -91,21 +91,21 @@ parse_valid_flags :: proc(args: []string) -> []string {
             }
 
             // Help char --> print usage exit
-            else if f[0] == 'h' do __print_usage_exit(0);
+            else if f[0] == 'h' do print_usage_exit(0);
 
-            // Check if char in __FLAGCHAR_MAP
-            else if f[0] in __FLAGCHAR_MAP {
-                flag_ptr = __FLAGCHAR_MAP[f[0]];
+            // Check if char in FLAGCHAR_MAP
+            else if f[0] in FLAGCHAR_MAP {
+                flag_ptr = FLAGCHAR_MAP[f[0]];
 
-                if flag_ptr.type == bool do __toggle_bool_value(flag_ptr.ptr);
+                if flag_ptr.type == bool do toggle_bool_value(flag_ptr.ptr);
                 else {
-                    if i == length - 1 do __print_exit(2, "No value supplied for key: %c\n", flag_ptr.flag_char);
-                    __parse_string_value(args[i+1], flag_ptr.ptr, flag_ptr.type);
+                    if i == length - 1 do print_exit(2, "No value supplied for key: %c\n", flag_ptr.flag_char);
+                    parse_string_value(args[i+1], flag_ptr.ptr, flag_ptr.type);
                     i += 1;
                 }
 
-                delete_key(&__FLAGCHAR_MAP, flag_ptr.flag_char);
-                delete_key(&__FLAGSTR_MAP, flag_ptr.flag_str);
+                delete_key(&FLAGCHAR_MAP, flag_ptr.flag_char);
+                delete_key(&FLAGSTR_MAP, flag_ptr.flag_str);
             }
 
             // Valid char but no match
@@ -124,30 +124,30 @@ parse_valid_flags :: proc(args: []string) -> []string {
                 // Iterate through individual chars
                 for j = 0; j < f_len; j += 1 {
                     // Help char --> print usage exit
-                    if f[j] == 'h' do __print_usage_exit(0);
+                    if f[j] == 'h' do print_usage_exit(0);
 
                     // Check if char in __FLAGCHAR_MAP
-                    if f[j] in __FLAGCHAR_MAP {
-                        flag_ptr = __FLAGCHAR_MAP[f[j]];
+                    if f[j] in FLAGCHAR_MAP {
+                        flag_ptr = FLAGCHAR_MAP[f[j]];
 
-                        if flag_ptr.type == bool do __toggle_bool_value(flag_ptr.ptr);
+                        if flag_ptr.type == bool do toggle_bool_value(flag_ptr.ptr);
                         else {
                             if j == f_len - 1 {
                                 // Final char in multi-stack is allowed to accept non-bool type argument
                                 if i == length - 1 {
                                     // Reached end of argument array, no value supplied
-                                    __print_exit(2, "No value supplied for key: %c\n", flag_ptr.flag_char);
+                                    print_exit(2, "No value supplied for key: %c\n", flag_ptr.flag_char);
                                 }
 
-                                __parse_string_value(args[i+1], flag_ptr.ptr, flag_ptr.type);
+                                parse_string_value(args[i+1], flag_ptr.ptr, flag_ptr.type);
                                 i += 1;
                             } else {
-                                __print_exit(2, "Cannot pass value for non-bool argument not at end of character stack: %c\n", flag_ptr.flag_char);
+                                print_exit(2, "Cannot pass value for non-bool argument not at end of character stack: %c\n", flag_ptr.flag_char);
                             }
                         }
 
-                        delete_key(&__FLAGCHAR_MAP, flag_ptr.flag_char);
-                        delete_key(&__FLAGSTR_MAP, flag_ptr.flag_str);
+                        delete_key(&FLAGCHAR_MAP, flag_ptr.flag_char);
+                        delete_key(&FLAGSTR_MAP, flag_ptr.flag_str);
                     } else {
                         match_found = false;
                         break;
@@ -161,21 +161,21 @@ parse_valid_flags :: proc(args: []string) -> []string {
                 f = f[1:];
 
                 // Help string --> print usage exit
-                if f == "help" do __print_usage_exit(0);
+                if f == "help" do print_usage_exit(0);
 
                 // Check if string in __FLAGSTR_MAP
-                if f in __FLAGSTR_MAP {
-                    flag_ptr = __FLAGSTR_MAP[f];
+                if f in FLAGSTR_MAP {
+                    flag_ptr = FLAGSTR_MAP[f];
 
-                    if flag_ptr.type == bool do __toggle_bool_value(flag_ptr.ptr);
+                    if flag_ptr.type == bool do toggle_bool_value(flag_ptr.ptr);
                     else {
-                        if i == length - 1 do __print_exit(2, "No value supplied for key: %s\n", flag_ptr.flag_str);
-                        __parse_string_value(args[i+1], flag_ptr.ptr, flag_ptr.type);
+                        if i == length - 1 do print_exit(2, "No value supplied for key: %s\n", flag_ptr.flag_str);
+                        parse_string_value(args[i+1], flag_ptr.ptr, flag_ptr.type);
                         i += 1;
                     }
 
-                    delete_key(&__FLAGCHAR_MAP, flag_ptr.flag_char);
-                    delete_key(&__FLAGSTR_MAP, flag_ptr.flag_str);
+                    delete_key(&FLAGCHAR_MAP, flag_ptr.flag_char);
+                    delete_key(&FLAGSTR_MAP, flag_ptr.flag_str);
                 } else {
                     match_found = false;
                 }
@@ -190,7 +190,8 @@ parse_valid_flags :: proc(args: []string) -> []string {
 }
 
 
-__toggle_bool_value :: proc(p: rawptr) {
+@(private)
+toggle_bool_value :: proc(p: rawptr) {
     n := cast(^bool) p;
     n^ = ! n^;
 }
@@ -219,8 +220,8 @@ track_flag :: proc($flag_char: u8, $flag_str, $desc: string, $default: $T) -> ^T
     #assert(flag_char != 'h' && flag_str != "help")
 
     // Check this argument isn't already in array
-    if flag_char in __FLAGCHAR_MAP || flag_str in __FLAGSTR_MAP {
-        __print_exit(1, "ERROR: multiple arguments with same key\n");
+    if flag_char in FLAGCHAR_MAP || flag_str in FLAGSTR_MAP {
+        print_exit(1, "ERROR: multiple arguments with same key\n");
     }
 
     // Create copy of default
@@ -233,15 +234,15 @@ track_flag :: proc($flag_char: u8, $flag_str, $desc: string, $default: $T) -> ^T
     f.desc      = desc;
     f.ptr       = cast(^rawptr) p;
     f.type      = T;
-    append(&__FLAG_ARRAY, f^);
+    append(&FLAG_ARRAY, f^);
 
     // Map keys --> value
-    __FLAGCHAR_MAP[flag_char] = f;
-    __FLAGSTR_MAP[flag_str]  = f;
+    FLAGCHAR_MAP[flag_char] = f;
+    FLAGSTR_MAP[flag_str]  = f;
 
     // If longest, store new max flag_str length
     length := len(flag_str);
-    if length > __FLAGSTR_MAX do __FLAGSTR_MAX = length;
+    if length > FLAGSTR_MAX do FLAGSTR_MAX = length;
 
     return cast(^T) p;
 }
